@@ -39,6 +39,12 @@ scrape_configs:
     static_configs:
       - targets: ['otel-collector:8889']
 
+  - job_name: 'ollama-gateway'
+    scrape_interval: 10s
+    metrics_path: /stats/prometheus
+    static_configs:
+      - targets: ['ollama-gateway:9901']
+
 
 alerting:
   alertmanagers:
