@@ -34,6 +34,11 @@ scrape_configs:
     static_configs:
       - targets: ['pushgateway:9091']
 
+  - job_name: 'otel-collector'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['otel-collector:8889']
+
 
 alerting:
   alertmanagers:

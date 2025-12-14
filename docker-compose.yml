@@ -7,6 +7,8 @@ networks:
 volumes:
     prometheus_data: {}
     grafana_data: {}
+    loki_data: {}
+    tempo_data: {}
 
 services:
 
@@ -106,6 +108,70 @@ services:
     labels:
       org.label-schema.group: "monitoring"
 
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: loki
+    command: -config.file=/etc/loki/loki.yml
+    volumes:
+      - ./loki:/etc/loki:ro
+      - loki_data:/loki
+    restart: unless-stopped
+    expose:
+      - 3100
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+
+  tempo:
+    image: grafana/tempo:2.3.1
+    container_name: tempo
+    command: -config.file=/etc/tempo/tempo.yml
+    volumes:
+      - ./tempo:/etc/tempo:ro
+      - tempo_data:/var/tempo
+    restart: unless-stopped
+    expose:
+      - 3200
+      - 4317
+      - 4318
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.96.0
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector/config.yml"]
+    volumes:
+      - ./otel-collector:/etc/otel-collector:ro
+    restart: unless-stopped
+    ports:
+      # OTLP endpoints for apps (host -> collector)
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    expose:
+      - 8889          # Prometheus scrape (OTLP metrics -> Prometheus exporter)
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+
+  promtail:
+    image: grafana/promtail:2.9.8
+    container_name: promtail
+    command: -config.file=/etc/promtail/promtail.yml
+    volumes:
+      - ./promtail:/etc/promtail:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    restart: unless-stopped
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+
   pushgateway:
     image: prom/pushgateway:v1.6.0
     container_name: pushgateway
@@ -126,6 +192,8 @@ services:
       - "9090:9090"
       - "9093:9093"
       - "9091:9091"
+      - "3100:3100"
+      - "3200:3200"
     volumes:
       - ./caddy:/etc/caddy
     environment:
