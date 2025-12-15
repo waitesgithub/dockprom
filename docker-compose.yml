@@ -5,6 +5,8 @@ networks:
 volumes:
     prometheus_data: {}
     grafana_data: {}
+    loki_data: {}
+    tempo_data: {}
 
 services:
 
@@ -104,6 +106,90 @@ services:
     labels:
       org.label-schema.group: "monitoring"
 
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: loki
+    command: -config.file=/etc/loki/loki.yml
+    volumes:
+      - ./loki:/etc/loki:ro
+      - loki_data:/loki
+    restart: unless-stopped
+    expose:
+      - 3100
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+
+  tempo:
+    image: grafana/tempo:2.3.1
+    container_name: tempo
+    command: -config.file=/etc/tempo/tempo.yml
+    volumes:
+      - ./tempo:/etc/tempo:ro
+      - tempo_data:/var/tempo
+    restart: unless-stopped
+    expose:
+      - 3200
+      - 4317
+      - 4318
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.96.0
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector/config.yml"]
+    volumes:
+      - ./otel-collector:/etc/otel-collector:ro
+    restart: unless-stopped
+    ports:
+      # OTLP endpoints for apps (host -> collector)
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    expose:
+      - 8889          # Prometheus scrape (OTLP metrics -> Prometheus exporter)
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+
+  ollama-gateway:
+    image: envoyproxy/envoy:v1.30.4
+    container_name: ollama-gateway
+    command: ["/usr/local/bin/envoy", "-c", "/etc/envoy/envoy.yml", "--log-level", "info"]
+    volumes:
+      - ./envoy:/etc/envoy:ro
+    extra_hosts:
+      # Linux Docker: maps to host gateway IP (Docker 20.10+)
+      - "host.docker.internal:host-gateway"
+    ports:
+      # Local Ollama gateway for users/apps (host -> gateway)
+      - "11435:11434"
+    expose:
+      # Envoy admin (/stats/prometheus)
+      - 9901
+    restart: unless-stopped
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+
+  alloy:
+    image: grafana/alloy:v1.3.0
+    container_name: alloy
+    command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.alloy"]
+    volumes:
+      - ./alloy:/etc/alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+
   pushgateway:
     image: prom/pushgateway:v1.11.0
     container_name: pushgateway
@@ -124,6 +210,8 @@ services:
       - "9090:9090"
       - "9093:9093"
       - "9091:9091"
+      - "3100:3100"
+      - "3200:3200"
     volumes:
       - ./caddy:/etc/caddy
     environment:
