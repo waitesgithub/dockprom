@@ -158,6 +158,27 @@ services:
     labels:
       org.label-schema.group: "monitoring"
 
+  ollama-gateway:
+    image: envoyproxy/envoy:v1.30.4
+    container_name: ollama-gateway
+    command: ["/usr/local/bin/envoy", "-c", "/etc/envoy/envoy.yml", "--log-level", "info"]
+    volumes:
+      - ./envoy:/etc/envoy:ro
+    extra_hosts:
+      # Linux Docker: maps to host gateway IP (Docker 20.10+)
+      - "host.docker.internal:host-gateway"
+    ports:
+      # Local Ollama gateway for users/apps (host -> gateway)
+      - "11435:11434"
+    expose:
+      # Envoy admin (/stats/prometheus)
+      - 9901
+    restart: unless-stopped
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+
   alloy:
     image: grafana/alloy:v1.3.0
     container_name: alloy

@@ -32,9 +32,69 @@ Containers:
 * Prometheus-Pushgateway (push acceptor for ephemeral and batch jobs) `http://<host-ip>:9091`
 * AlertManager (alerts management) `http://<host-ip>:9093`
 * Grafana (visualize metrics) `http://<host-ip>:3000`
+* Loki (logs database) `http://<host-ip>:3100`
+* Tempo (traces database) `http://<host-ip>:3200`
+* OpenTelemetry Collector (OTLP ingest) `http://<host-ip>:4318` and `<host-ip>:4317`
+* Ollama Gateway (HTTP proxy + tracing/metrics) `http://<host-ip>:11435`
 * NodeExporter (host metrics collector)
 * cAdvisor (containers metrics collector)
-* Caddy (reverse proxy and basic auth provider for prometheus and alertmanager)
+* Alloy (Docker logs collector -> Loki)
+* Caddy (reverse proxy and basic auth provider for prometheus/alertmanager/loki/tempo)
+
+## AI Observability (Ollama + OTEL + Loki + Tempo)
+
+This repo extends Dockprom with a **drop-in observability bundle** for AI/LLM apps:
+
+- **Traces**: Apps (or the Ollama gateway) send OTLP traces to `otel-collector` → stored in **Tempo** → viewed in **Grafana**
+- **Logs**: Docker container logs are collected by **Alloy** → stored in **Loki** → viewed in **Grafana**
+- **Metrics**: OTLP metrics can be sent to `otel-collector` and are exposed for **Prometheus** scraping
+- **Ollama gateway**: an Envoy proxy that forwards to your host Ollama and emits **request-level tracing + Prometheus metrics** automatically
+
+### 1) Make host Ollama reachable from containers
+
+The gateway runs in Docker and forwards to `host.docker.internal:11434`. On Linux, that resolves to the host gateway IP, but **Ollama must listen on a non-loopback interface**.
+
+For example:
+
+```bash
+export OLLAMA_HOST=0.0.0.0:11434
+ollama serve
+```
+
+### 2) Call Ollama through the gateway (no-code option)
+
+Point users/apps at:
+
+- **Gateway**: `http://<host-ip>:11435`
+
+This gives you:
+
+- **Tempo traces** for each request
+- **Prometheus metrics** for RPS/latency/errors (Envoy)
+- **Loki logs** for gateway/access logs (via Docker log collection)
+
+### 3) OTEL setup for apps (host + Docker)
+
+If you *also* instrument your app (recommended), set OTEL exporter endpoint to the collector.
+
+**Apps running on the host:**
+
+```bash
+export OTEL_SERVICE_NAME="my-app"
+export OTEL_EXPORTER_OTLP_ENDPOINT="http://127.0.0.1:4318"
+export OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"
+```
+
+**Apps running in Docker on the same `monitor-net` network:**
+
+```bash
+OTEL_SERVICE_NAME=my-app
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+```
+
+Notes:
+- The gateway gives you **transport-level observability** (latency/errors/throughput). Token/cost/quality metrics typically require **app-level instrumentation**.
 
 ## Setup Grafana
 
