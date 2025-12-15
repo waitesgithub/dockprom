@@ -122,7 +122,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(envoy_http_downstream_rq_total{job=\"$job\"}[1m]))"
+          "expr": "ai:envoy:downstream_rps{job=\"$job\"}"
         }
       ]
     },
@@ -142,7 +142,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(envoy_http_downstream_rq_xx{job=\"$job\", envoy_response_code_class=\"5\"}[5m]))"
+          "expr": "ai:envoy:downstream_5xx_rps{job=\"$job\"}"
         }
       ]
     },
@@ -162,7 +162,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(envoy_http_downstream_rq_time_bucket{job=\"$job\"}[5m]))) * 1000"
+          "expr": "ai:envoy:downstream_latency_p95_ms{job=\"$job\"}"
         }
       ]
     },
@@ -182,7 +182,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(envoy_http_downstream_rq_active{job=\"$job\"})"
+          "expr": "ai:envoy:active_requests{job=\"$job\"}"
         }
       ]
     },
@@ -202,7 +202,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (envoy_response_code_class) (rate(envoy_http_downstream_rq_xx{job=\"$job\"}[1m]))",
+          "expr": "ai:envoy:downstream_rps_by_codeclass{job=\"$job\"}",
           "legendFormat": "{{envoy_response_code_class}}xx"
         }
       ]
@@ -223,17 +223,17 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(envoy_http_downstream_rq_time_bucket{job=\"$job\"}[5m]))) * 1000",
+          "expr": "ai:envoy:downstream_latency_p50_ms{job=\"$job\"}",
           "legendFormat": "p50"
         },
         {
           "refId": "B",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(envoy_http_downstream_rq_time_bucket{job=\"$job\"}[5m]))) * 1000",
+          "expr": "ai:envoy:downstream_latency_p95_ms{job=\"$job\"}",
           "legendFormat": "p95"
         },
         {
           "refId": "C",
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(envoy_http_downstream_rq_time_bucket{job=\"$job\"}[5m]))) * 1000",
+          "expr": "ai:envoy:downstream_latency_p99_ms{job=\"$job\"}",
           "legendFormat": "p99"
         }
       ]
@@ -254,12 +254,12 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(envoy_cluster_upstream_rq_total{job=\"$job\", envoy_cluster_name=\"$cluster\"}[1m]))",
+          "expr": "ai:envoy:upstream_rps{job=\"$job\", envoy_cluster_name=\"$cluster\"}",
           "legendFormat": "upstream_rq"
         },
         {
           "refId": "B",
-          "expr": "sum(rate(envoy_cluster_upstream_rq_xx{job=\"$job\", envoy_cluster_name=\"$cluster\", envoy_response_code_class=\"5\"}[5m]))",
+          "expr": "ai:envoy:upstream_5xx_rps{job=\"$job\", envoy_cluster_name=\"$cluster\"}",
           "legendFormat": "upstream_5xx"
         }
       ]
@@ -280,12 +280,12 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(envoy_cluster_upstream_rq_time_bucket{job=\"$job\", envoy_cluster_name=\"$cluster\"}[5m]))) * 1000",
+          "expr": "ai:envoy:upstream_latency_p95_ms{job=\"$job\", envoy_cluster_name=\"$cluster\"}",
           "legendFormat": "p95"
         },
         {
           "refId": "B",
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(envoy_cluster_upstream_rq_time_bucket{job=\"$job\", envoy_cluster_name=\"$cluster\"}[5m]))) * 1000",
+          "expr": "ai:envoy:upstream_latency_p99_ms{job=\"$job\", envoy_cluster_name=\"$cluster\"}",
           "legendFormat": "p99"
         }
       ]

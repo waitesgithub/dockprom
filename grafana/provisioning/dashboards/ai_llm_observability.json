@@ -81,7 +81,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(llm_requests_total{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[1m]))"
+          "expr": "sum(ai:llm:rps{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"})"
         }
       ]
     },
@@ -101,7 +101,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(sum(rate(llm_errors_total{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m])) / clamp_min(sum(rate(llm_requests_total{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m])), 1)) * 100"
+          "expr": "sum(ai:llm:error_rate{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}) * 100"
         }
       ]
     },
@@ -121,7 +121,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(llm_latency_seconds_bucket{stage=\"end_to_end\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))) * 1000"
+          "expr": "max(ai:llm:latency_p95_ms{stage=\"end_to_end\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"})"
         }
       ]
     },
@@ -141,7 +141,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(llm_tokens_total{type=~\"prompt|completion\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[1m]))"
+          "expr": "sum(ai:llm:tokens_per_sec{type=~\"prompt|completion\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"})"
         }
       ]
     },
@@ -161,7 +161,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (status) (rate(llm_requests_total{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[1m]))",
+          "expr": "sum by (status) (ai:llm:rps_by_status{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"})",
           "legendFormat": "{{status}}"
         }
       ]
@@ -182,17 +182,17 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(llm_latency_seconds_bucket{stage=\"end_to_end\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))) * 1000",
+          "expr": "max(ai:llm:latency_p50_ms{stage=\"end_to_end\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"})",
           "legendFormat": "p50"
         },
         {
           "refId": "B",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(llm_latency_seconds_bucket{stage=\"end_to_end\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))) * 1000",
+          "expr": "max(ai:llm:latency_p95_ms{stage=\"end_to_end\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"})",
           "legendFormat": "p95"
         },
         {
           "refId": "C",
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(llm_latency_seconds_bucket{stage=\"end_to_end\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))) * 1000",
+          "expr": "max(ai:llm:latency_p99_ms{stage=\"end_to_end\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"})",
           "legendFormat": "p99"
         }
       ]
@@ -213,17 +213,17 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(llm_latency_seconds_bucket{stage=\"model\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))) * 1000",
+          "expr": "max(ai:llm:latency_p95_ms{stage=\"model\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"})",
           "legendFormat": "model p95"
         },
         {
           "refId": "B",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(llm_latency_seconds_bucket{stage=\"retrieval\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))) * 1000",
+          "expr": "max(ai:llm:latency_p95_ms{stage=\"retrieval\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"})",
           "legendFormat": "retrieval p95"
         },
         {
           "refId": "C",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(llm_latency_seconds_bucket{stage=\"tool\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))) * 1000",
+          "expr": "max(ai:llm:latency_p95_ms{stage=\"tool\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"})",
           "legendFormat": "tool p95"
         }
       ]
@@ -244,7 +244,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (type) (rate(llm_tokens_total{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[1m]))",
+          "expr": "sum by (type) (ai:llm:tokens_per_sec{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"})",
           "legendFormat": "{{type}}"
         }
       ]
@@ -265,12 +265,12 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(llm_retries_total{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))",
+          "expr": "sum(ai:llm:retries_per_sec{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"})",
           "legendFormat": "retries"
         },
         {
           "refId": "B",
-          "expr": "sum(rate(llm_cancellations_total{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))",
+          "expr": "sum(ai:llm:cancellations_per_sec{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"})",
           "legendFormat": "cancellations"
         }
       ]
@@ -291,7 +291,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(llm_time_to_first_token_seconds_bucket{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))) * 1000",
+          "expr": "max(ai:llm:ttft_p95_ms{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"})",
           "legendFormat": "p95"
         }
       ]
@@ -312,7 +312,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(llm_queue_wait_seconds_bucket{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))) * 1000",
+          "expr": "max(ai:llm:queue_wait_p95_ms{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"})",
           "legendFormat": "p95"
         }
       ]
@@ -333,7 +333,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(rag_retrieval_latency_seconds_bucket{service=~\"$service\"}[5m]))) * 1000",
+          "expr": "max(ai:rag:retrieval_latency_p95_ms{service=~\"$service\"})",
           "legendFormat": "p95"
         }
       ]
@@ -354,7 +354,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(rag_empty_retrieval_total{service=~\"$service\"}[5m]))",
+          "expr": "sum(ai:rag:empty_retrieval_per_sec{service=~\"$service\"})",
           "legendFormat": "empty_retrieval"
         }
       ]
@@ -375,12 +375,12 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (tool) (rate(llm_tool_calls_total{service=~\"$service\", status=\"success\"}[5m]))",
+          "expr": "sum by (tool) (ai:tool:calls_per_sec{service=~\"$service\", status=\"success\"})",
           "legendFormat": "{{tool}} success"
         },
         {
           "refId": "B",
-          "expr": "sum by (tool) (rate(llm_tool_calls_total{service=~\"$service\", status=\"error\"}[5m]))",
+          "expr": "sum by (tool) (ai:tool:calls_per_sec{service=~\"$service\", status=\"error\"})",
           "legendFormat": "{{tool}} error"
         }
       ]
@@ -401,12 +401,12 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (policy) (rate(llm_guardrail_blocks_total{service=~\"$service\"}[5m]))",
+          "expr": "sum by (policy) (ai:safety:guardrail_blocks_per_sec{service=~\"$service\"})",
           "legendFormat": "blocked {{policy}}"
         },
         {
           "refId": "B",
-          "expr": "sum by (type) (rate(llm_pii_redactions_total{service=~\"$service\"}[5m]))",
+          "expr": "sum by (type) (ai:safety:pii_redactions_per_sec{service=~\"$service\"})",
           "legendFormat": "pii {{type}}"
         }
       ]
