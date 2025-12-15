@@ -1,0 +1,415 @@
+{
+  "uid": "ai-llm-observability",
+  "title": "AI - LLM Observability (Model-agnostic)",
+  "tags": [
+    "ai",
+    "llm",
+    "observability",
+    "prometheus"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": {
+          "query": "label_values(llm_requests_total, service)",
+          "refId": "service"
+        },
+        "includeAll": true,
+        "multi": true,
+        "hide": 0
+      },
+      {
+        "name": "model",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": {
+          "query": "label_values(llm_requests_total, model)",
+          "refId": "model"
+        },
+        "includeAll": true,
+        "multi": true,
+        "hide": 0
+      },
+      {
+        "name": "provider",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": {
+          "query": "label_values(llm_requests_total, provider)",
+          "refId": "provider"
+        },
+        "includeAll": true,
+        "multi": true,
+        "hide": 2
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "LLM RPS",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(llm_requests_total{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[1m]))"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Error Rate (%)",
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum(rate(llm_errors_total{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m])) / clamp_min(sum(rate(llm_requests_total{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m])), 1)) * 100"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "p95 End-to-end Latency (ms)",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(llm_latency_seconds_bucket{stage=\"end_to_end\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))) * 1000"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Tokens / sec",
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(llm_tokens_total{type=~\"prompt|completion\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[1m]))"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Requests / sec by status",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (status) (rate(llm_requests_total{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[1m]))",
+          "legendFormat": "{{status}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency percentiles (end_to_end)",
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(llm_latency_seconds_bucket{stage=\"end_to_end\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))) * 1000",
+          "legendFormat": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(llm_latency_seconds_bucket{stage=\"end_to_end\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))) * 1000",
+          "legendFormat": "p95"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(llm_latency_seconds_bucket{stage=\"end_to_end\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))) * 1000",
+          "legendFormat": "p99"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency breakdown percentiles (model / retrieval / tool)",
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(llm_latency_seconds_bucket{stage=\"model\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))) * 1000",
+          "legendFormat": "model p95"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(llm_latency_seconds_bucket{stage=\"retrieval\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))) * 1000",
+          "legendFormat": "retrieval p95"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(llm_latency_seconds_bucket{stage=\"tool\", service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))) * 1000",
+          "legendFormat": "tool p95"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Tokens (prompt vs completion)",
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (type) (rate(llm_tokens_total{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[1m]))",
+          "legendFormat": "{{type}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Retries / cancellations",
+      "gridPos": {
+        "x": 12,
+        "y": 20,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(llm_retries_total{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))",
+          "legendFormat": "retries"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate(llm_cancellations_total{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))",
+          "legendFormat": "cancellations"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Streaming: time to first token p95 (ms)",
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(llm_time_to_first_token_seconds_bucket{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))) * 1000",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Queue wait p95 (ms)",
+      "gridPos": {
+        "x": 12,
+        "y": 28,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(llm_queue_wait_seconds_bucket{service=~\"$service\", model=~\"$model\", provider=~\"$provider\"}[5m]))) * 1000",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "RAG: retrieval latency p95 (ms)",
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(rag_retrieval_latency_seconds_bucket{service=~\"$service\"}[5m]))) * 1000",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "RAG: empty retrieval rate",
+      "gridPos": {
+        "x": 12,
+        "y": 36,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(rag_empty_retrieval_total{service=~\"$service\"}[5m]))",
+          "legendFormat": "empty_retrieval"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Tools: calls and failures",
+      "gridPos": {
+        "x": 0,
+        "y": 44,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (tool) (rate(llm_tool_calls_total{service=~\"$service\", status=\"success\"}[5m]))",
+          "legendFormat": "{{tool}} success"
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (tool) (rate(llm_tool_calls_total{service=~\"$service\", status=\"error\"}[5m]))",
+          "legendFormat": "{{tool}} error"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Safety: guardrail blocks / PII redactions",
+      "gridPos": {
+        "x": 0,
+        "y": 52,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (policy) (rate(llm_guardrail_blocks_total{service=~\"$service\"}[5m]))",
+          "legendFormat": "blocked {{policy}}"
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (type) (rate(llm_pii_redactions_total{service=~\"$service\"}[5m]))",
+          "legendFormat": "pii {{type}}"
+        }
+      ]
+    }
+  ]
+}
