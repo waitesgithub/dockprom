@@ -1,15 +1,15 @@
-# dockprom
+# dockprom-ai
 
 A monitoring solution for Docker hosts and containers with [Prometheus](https://prometheus.io/), [Grafana](http://grafana.org/), [cAdvisor](https://github.com/google/cadvisor),
 [NodeExporter](https://github.com/prometheus/node_exporter) and alerting with [AlertManager](https://github.com/prometheus/alertmanager).
 
 ## Install
 
-Clone this repository on your Docker host, cd into dockprom directory and run compose up:
+Clone this repository on your Docker host, cd into `dockprom-ai` directory and run compose up:
 
 ```bash
-git clone https://github.com/stefanprodan/dockprom
-cd dockprom
+git clone <YOUR_REPO_URL> dockprom-ai
+cd dockprom-ai
 
 ADMIN_USER='admin' ADMIN_PASSWORD='admin' ADMIN_PASSWORD_HASH='$2a$14$1l.IozJx7xQRVmlkEQ32OeEEfP5mRxTpbDTCTcXRqn19gXD8YK1pO' docker-compose up -d
 ```
@@ -96,6 +96,29 @@ OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 Notes:
 - The gateway gives you **transport-level observability** (latency/errors/throughput). Token/cost/quality metrics typically require **app-level instrumentation**.
 
+## Observability 3.0: Claude/Ollama + MCP Server + n8n + Monitoring
+
+This repo’s “AI Observability” layer is designed to support the architecture described in:  
+Cumhur M. Akkaya, **“Observability 3.0 AI-Powered APM = Claude(cloud-based)/Ollama(self-hosted)+MCP Server+n8n+Monitor…”** ([Medium link](https://cmakkaya.medium.com/observability-3-0-ai-powered-apm-claude-cloud-based-ollama-self-hosted-mcp-server-n8n-monitor-6ea436e271fe)).
+
+How the pieces map to this stack:
+
+- **Monitor (this repo)**: Prometheus + Grafana + Loki + Tempo + OTEL Collector provide the metrics/logs/traces backbone.
+- **Ollama (self-hosted)**: Use the included `ollama-gateway` for request-level tracing + metrics, then add app-level OTEL for token/cost/quality signals.
+- **Claude (cloud-based)**: Instrument your Claude-calling app with OTEL and export to `otel-collector` (same pipelines as above).
+- **MCP server**: Run an MCP server that can query/read **Prometheus/Grafana/Loki/Tempo** so an LLM agent can investigate incidents using real telemetry (recommended: read-only credentials + network-restricted access).
+- **n8n**: Automate “alert → enrich → route” workflows (e.g., Alertmanager webhook → n8n → fetch traces/logs/metrics → LLM summary → Slack/Jira).
+
+### Optional: run n8n (workflow automation)
+
+This repo can optionally run n8n as a Compose profile (so it won’t start unless you enable it):
+
+```bash
+docker-compose --profile ai up -d
+```
+
+Then open: `http://<host-ip>:5678`
+
 ## Setup Grafana
 
 Navigate to `http://<host-ip>:3000` and login with user ***admin*** password ***admin***. You can change the credentials in the compose file or by supplying the `ADMIN_USER` and `ADMIN_PASSWORD` environment variables on compose up. The config file can be added directly in grafana part like this
@@ -130,7 +153,7 @@ Grafana is preconfigured with dashboards and Prometheus as the default data sour
 
 ***Docker Host Dashboard***
 
-![Host](https://raw.githubusercontent.com/stefanprodan/dockprom/master/screens/Grafana_Docker_Host.png)
+![Host](./screens/Grafana_Docker_Host.png)
 
 The Docker Host Dashboard shows key metrics for monitoring the resource usage of your server:
 
@@ -159,7 +182,7 @@ node_filesystem_free_bytes
 
 ***Docker Containers Dashboard***
 
-![Containers](https://raw.githubusercontent.com/stefanprodan/dockprom/master/screens/Grafana_Docker_Containers.png)
+![Containers](./screens/Grafana_Docker_Containers.png)
 
 The Docker Containers Dashboard shows key metrics for monitoring running containers:
 
@@ -191,7 +214,7 @@ node_filesystem_free_bytes
 
 ***Monitor Services Dashboard***
 
-![Monitor Services](https://raw.githubusercontent.com/stefanprodan/dockprom/master/screens/Grafana_Prometheus.png)
+![Monitor Services](./screens/Grafana_Prometheus.png)
 
 The Monitor Services Dashboard shows key metrics for monitoring the containers that make up the monitoring stack:
 
@@ -206,11 +229,11 @@ The Monitor Services Dashboard shows key metrics for monitoring the containers t
 
 ## Define alerts
 
-Three alert groups have been setup within the [alert.rules](https://github.com/stefanprodan/dockprom/blob/master/prometheus/alert.rules) configuration file:
+Three alert groups have been setup within the [alert.rules](./prometheus/alert.rules) configuration file:
 
-* Monitoring services alerts [targets](https://github.com/stefanprodan/dockprom/blob/master/prometheus/alert.rules#L2-L11)
-* Docker Host alerts [host](https://github.com/stefanprodan/dockprom/blob/master/prometheus/alert.rules#L13-L40)
-* Docker Containers alerts [containers](https://github.com/stefanprodan/dockprom/blob/master/prometheus/alert.rules#L42-L69)
+* Monitoring services alerts [targets](./prometheus/alert.rules)
+* Docker Host alerts [host](./prometheus/alert.rules)
+* Docker Containers alerts [containers](./prometheus/alert.rules)
 
 You can modify the alert rules and reload them by making a HTTP POST call to Prometheus:
 
@@ -325,7 +348,7 @@ A complete list of integrations can be found [here](https://prometheus.io/docs/a
 
 You can view and silence notifications by accessing `http://<host-ip>:9093`.
 
-The notification receivers can be configured in [alertmanager/config.yml](https://github.com/stefanprodan/dockprom/blob/master/alertmanager/config.yml) file.
+The notification receivers can be configured in [alertmanager/config.yml](./alertmanager/config.yml) file.
 
 To receive alerts via Slack you need to make a custom integration by choose ***incoming web hooks*** in your Slack team app page.
 You can find more details on setting up Slack integration [here](http://www.robustperception.io/using-slack-with-the-alertmanager/).
@@ -346,7 +369,7 @@ receivers:
             api_url: 'https://hooks.slack.com/services/<webhook-id>'
 ```
 
-![Slack Notifications](https://raw.githubusercontent.com/stefanprodan/dockprom/master/screens/Slack_Notifications.png)
+![Slack Notifications](./screens/Slack_Notifications.png)
 
 ## Sending metrics to the Pushgateway
 

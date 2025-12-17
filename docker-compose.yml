@@ -7,6 +7,7 @@ volumes:
     grafana_data: {}
     loki_data: {}
     tempo_data: {}
+    n8n_data: {}
 
 services:
 
@@ -218,6 +219,23 @@ services:
       - ADMIN_USER=${ADMIN_USER:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
       - ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH:-$2a$14$1l.IozJx7xQRVmlkEQ32OeEEfP5mRxTpbDTCTcXRqn19gXD8YK1pO}
+    restart: unless-stopped
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    profiles: ["ai"]
+    environment:
+      # Minimal default config (SQLite). For production, use Postgres + secure auth.
+      - N8N_DIAGNOSTICS_ENABLED=false
+    volumes:
+      - n8n_data:/home/node/.n8n
+    ports:
+      - "5678:5678"
     restart: unless-stopped
     networks:
       - monitor-net
