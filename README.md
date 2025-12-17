@@ -96,6 +96,20 @@ OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 Notes:
 - The gateway gives you **transport-level observability** (latency/errors/throughput). Token/cost/quality metrics typically require **app-level instrumentation**.
 
+## AI coding tools (Claude Code, Codex CLI, Cursor, Gemini CLI, OpenCode)
+
+This repo includes minimal, repo-scoped instruction files so common coding agents behave consistently and safely:
+
+- **Claude Code**: `CLAUDE.md`
+- **OpenAI Codex CLI**: `AGENTS.md`
+- **Cursor**: `.cursor/rules/dockprom-ai.mdc` (also reads `AGENTS.md`)
+- **Gemini CLI**: `GEMINI.md` (respects `.geminiignore`)
+- **OpenCode / Crush**: `OpenCode.md` and `.opencode.json` (no API keys included)
+
+Security notes:
+- **Do not commit secrets** (API keys, tokens, Slack webhook URLs). Use environment variables or a local `.env` (ignored by git).
+- **Avoid logging sensitive data**: Docker logs are shipped to Loki via Alloy.
+
 ## Setup Grafana
 
 Navigate to `http://<host-ip>:3000` and login with user ***admin*** password ***admin***. You can change the credentials in the compose file or by supplying the `ADMIN_USER` and `ADMIN_PASSWORD` environment variables on compose up. The config file can be added directly in grafana part like this
