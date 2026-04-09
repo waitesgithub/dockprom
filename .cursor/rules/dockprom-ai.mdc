@@ -1,0 +1,22 @@
+# dockprom-ai (Cursor rules)
+
+## Context
+This repo is a Docker observability stack (Prometheus/Grafana/Loki/Tempo/OTel Collector) plus an Envoy `ollama-gateway` for request-level tracing/metrics.
+
+## Safety/quality guardrails
+- Never commit secrets (API keys, Slack webhook URLs, credentials). Use env vars or local `.env`.
+- Do not remove/weaken auth in `caddy/Caddyfile`.
+- Be mindful that Alloy ships Docker logs to Loki; avoid logging prompts/responses/secrets.
+- For `docker-compose.yml` changes: keep images pinned and avoid adding privileged access unless necessary.
+
+## Where to edit
+- Prometheus scrapes/alerts: `prometheus/prometheus.yml`, `prometheus/alert.rules`
+- OTel pipelines: `otel-collector/config.yml`
+- Logs shipping: `alloy/config.alloy`, `loki/loki.yml`
+- Traces backend: `tempo/tempo.yml`
+- Gateway: `envoy/envoy.yml`
+- Grafana: `grafana/provisioning/datasources/datasource.yml`, dashboards in `grafana/provisioning/dashboards/`
+
+## Definition of done (for infra changes)
+- Config files remain valid YAML/Alloy.
+- The existing endpoints still work and are not unintentionally exposed.

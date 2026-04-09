@@ -1,0 +1,12 @@
+{
+  "data": {
+    "directory": ".opencode"
+  },
+  "shell": {
+    "path": "/bin/bash",
+    "args": ["-l"]
+  },
+  "debug": false,
+  "debugLSP": false,
+  "autoCompact": true
+}

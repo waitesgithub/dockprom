@@ -1,0 +1,9 @@
+.git/
+**/.env
+**/.env.*
+**/.opencode/
+# Local/IDE noise
+.vscode/
+.idea/
+.vs/
+.DS_Store

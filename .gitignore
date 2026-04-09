@@ -2,3 +2,10 @@
 .vs/
 .vscode/
 .idea/
+
+# Local environment/secrets (do not commit)
+.env
+.env.*
+
+# Local agent state
+.opencode/
